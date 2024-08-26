@@ -1,0 +1,64 @@
+This is a POC to install and run Datadog agent on Demo-aws-sct-vm in Azure. Before, installing datadog agent, make sure to uninstall log analytics which is running in the vm.
+uninstall log analytics in Demo-aws-sct-vm
+This script will uninstall log analytics 
+# Define the name of the Log Analytics Agent
+$agentName = "Microsoft Monitoring Agent"
+
+# Check if the Log Analytics Agent is installed
+$agent = Get-WmiObject -Class Win32_Product | Where-Object { $_.Name -like "*$agentName*" }
+
+if ($agent) {
+    Write-Host "Uninstalling $agentName..."
+    $agent.Uninstall()
+    Write-Host "$agentName has been uninstalled successfully."
+} else {
+    Write-Host "$agentName is not installed on this system."
+}
+Steps to Run the Script:
+Open PowerShell as Administrator:
+
+Press Win + X and select Windows PowerShell (Admin).
+Copy and Paste the Script:
+
+Copy the script above and paste it into the PowerShell window.
+Run the Script:
+
+Press Enter to execute the script. If the Log Analytics Agent is installed, the script will uninstall it. If it’s not installed, it will notify you
+      2. install Datadog
+Actionstep DataDog-API-Key
+Download Datadog agent on https://s3.amazonaws.com/ddagent-windows-stable/datadog-agent-7-latest.amd64.msi
+Run to install the agent
+Configure Datadog (to edit configuration modify the 'datadog.yaml' configuration file)
+Start the DataDog Agent Service
+Clean Up (The installer file is deleted after installation to free up space)
+PowerShell script to automate the above process.
+# Variables
+$datadogApiKey = "<Your-DataDog-API-Key>"
+$installerUrl = "https://s3.amazonaws.com/ddagent-windows-stable/datadog-agent-7-latest.amd64.msi"
+$installerPath = "$env:TEMP\datadog-agent.msi"
+
+# Step 1: Download the DataDog Agent Installer
+Write-Host "Downloading DataDog agent installer..."
+Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath
+
+# Step 2: Install the DataDog Agent
+Write-Host "Installing DataDog agent..."
+Start-Process "msiexec.exe" -ArgumentList "/i", "`"$installerPath`"", "/qn", "APIKEY=$datadogApiKey" -NoNewWindow -Wait
+
+How to run this script:
+ Set-ExecutionPolicy RemoteSigned -Scope Process -Force
+.\Setup-DataDog.ps1
+
+# Step 3: Configure the DataDog Agent 
+# (Optional) If you need to set additional configurations, modify the 'datadog.yaml' configuration file.  After installation do the following to start the processes.
+You can manually go to the process collection configuration file under Setting and change process collection from False to True.
+
+add site: us3.datadoghq.com
+Conf.d Path: C:\ProgramData\Datadog\conf.d
+Checks.d Path: C:\ProgramData\Datadog\checks.d
+}
+
+N/B: You may want to remove the installer file to free some space run the script below.
+# Cleanup: Remove the installer file
+Remove-Item -Path $installerPath -Force
+Write-Host "DataDog agent setup completed."
